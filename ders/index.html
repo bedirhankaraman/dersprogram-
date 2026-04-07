@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Günlük Program Takip</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand__title">Program Takip</div>
+          <div class="brand__subtitle" id="todayLabel">—</div>
+        </div>
+
+        <button class="iconBtn" id="menuBtn" aria-label="Menüyü aç/kapat" aria-expanded="false">
+          <span class="hamburger" aria-hidden="true"></span>
+        </button>
+      </header>
+
+      <aside class="sidebar" id="sidebar" aria-hidden="true">
+        <div class="sidebar__header">
+          <div class="sidebar__title">Menü</div>
+          <button class="iconBtn iconBtn--small" id="closeSidebarBtn" aria-label="Menüyü kapat">
+            ✕
+          </button>
+        </div>
+
+        <nav class="nav">
+          <button class="nav__item nav__item--active" data-panel="program">
+            Ders Programı
+          </button>
+          <button class="nav__item" data-panel="nets">
+            Net Ekleme
+          </button>
+          <button class="nav__item" data-panel="settings">
+            Ayarlar
+          </button>
+        </nav>
+
+        <section class="sidebar__content">
+          <div class="panel panel--active" id="panel-program">
+            <div class="panel__section">
+              <div class="panel__label">Görünen program</div>
+              <div class="segmented" role="tablist" aria-label="Program seçimi">
+                <button class="segmented__btn segmented__btn--active" id="weekdayBtn" type="button">
+                  Hafta İçi
+                </button>
+                <button class="segmented__btn" id="weekendBtn" type="button">
+                  Hafta Sonu
+                </button>
+              </div>
+              <div class="hint">
+                Otomatik seçim: Bugüne göre. İstersen buradan değiştir.
+              </div>
+            </div>
+
+            <div class="panel__section">
+              <div class="panel__label">Günün akışı</div>
+              <div class="list" id="sidebarScheduleList"></div>
+            </div>
+          </div>
+
+          <div class="panel" id="panel-nets">
+            <div class="panel__section">
+              <div class="panel__label">Hafta sonu net kaydı</div>
+              <form id="netForm" class="form">
+                <label class="field">
+                  <span class="field__label">Tarih</span>
+                  <input class="field__input" type="date" id="netDate" required />
+                </label>
+                <div class="grid2">
+                  <label class="field">
+                    <span class="field__label">TYT Net</span>
+                    <input class="field__input" type="number" id="tytNet" min="0" step="0.25" placeholder="örn: 85.5" required />
+                  </label>
+                  <label class="field">
+                    <span class="field__label">AYT Net</span>
+                    <input class="field__input" type="number" id="aytNet" min="0" step="0.25" placeholder="örn: 55.25" required />
+                  </label>
+                </div>
+                <button class="btn" type="submit">Kaydet</button>
+              </form>
+            </div>
+
+            <div class="panel__section">
+              <div class="panel__label">İstatistik</div>
+              <div class="stats" id="netStats">
+                <div class="stat">
+                  <div class="stat__k">Kayıt</div>
+                  <div class="stat__v" id="statCount">0</div>
+                </div>
+                <div class="stat">
+                  <div class="stat__k">TYT Ortalama</div>
+                  <div class="stat__v" id="statTytAvg">—</div>
+                </div>
+                <div class="stat">
+                  <div class="stat__k">AYT Ortalama</div>
+                  <div class="stat__v" id="statAytAvg">—</div>
+                </div>
+                <div class="stat">
+                  <div class="stat__k">Son Kayıt</div>
+                  <div class="stat__v" id="statLast">—</div>
+                </div>
+              </div>
+
+              <div class="chartCard">
+                <div class="chartHeader">
+                  <div class="chartTitle">Net grafiği (son 8 kayıt)</div>
+                  <button class="btn btn--ghost btn--sm" id="clearNetsBtn" type="button">
+                    Tümünü Sil
+                  </button>
+                </div>
+                <canvas id="netChart" width="680" height="260"></canvas>
+                <div class="hint">
+                  Veriler cihazında saklanır (localStorage). Başka cihazda görünmez.
+                </div>
+              </div>
+
+              <div class="panel__section">
+                <div class="panel__label">Kayıtlar</div>
+                <div class="tableWrap">
+                  <table class="table" id="netsTable" aria-label="Net kayıtları tablosu">
+                    <thead>
+                      <tr>
+                        <th>Tarih</th>
+                        <th>TYT</th>
+                        <th>AYT</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" id="panel-settings">
+            <div class="panel__section">
+              <div class="panel__label">Saat gösterimi</div>
+              <label class="row">
+                <input type="checkbox" id="showSeconds" />
+                <span>Saniyeyi göster</span>
+              </label>
+              <div class="hint">Daha “canlı” görünür ama pil tüketimi biraz artabilir.</div>
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <div class="overlay" id="overlay" hidden></div>
+
+      <main class="content">
+        <section class="hero">
+          <div class="nowCard">
+            <div class="nowCard__top">
+              <div>
+                <div class="pill" id="scheduleTypePill">—</div>
+                <div class="nowTitle" id="nowTitle">Şu an</div>
+              </div>
+              <div class="clock">
+                <div class="clock__time" id="clockTime">--:--</div>
+                <div class="clock__date" id="clockDate">—</div>
+              </div>
+            </div>
+
+            <div class="nowMain">
+              <div class="nowMain__left">
+                <div class="big" id="currentSlotTitle">Program dışında</div>
+                <div class="sub" id="currentSlotDetail">Bir sonraki etkinlik hesaplanıyor…</div>
+              </div>
+              <div class="nowMain__right">
+                <div class="countdown">
+                  <div class="countdown__k" id="countdownLabel">—</div>
+                  <div class="countdown__v" id="countdownValue">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="todayCard">
+            <div class="todayCard__header">
+              <div class="todayCard__title">Günün programı</div>
+              <div class="todayCard__meta" id="dayMeta">—</div>
+            </div>
+            <div class="timeline" id="timeline"></div>
+          </div>
+        </section>
+
+        <footer class="footer">
+          <div class="footer__text">
+            Kısayol: Menüden “Net Ekleme” ile hafta sonu TYT/AYT netlerini kaydet.
+          </div>
+        </footer>
+      </main>
+    </div>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>

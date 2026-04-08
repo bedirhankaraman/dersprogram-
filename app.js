@@ -336,7 +336,7 @@ function updateNowCard(scheduleState, now) {
   countdownValue.textContent = "Tamamlandı";
 }
 
-function bindProgramToggle(state) {
+function bindProgramToggle(state, onChange) {
   const weekdayBtn = el("weekdayBtn");
   const weekendBtn = el("weekendBtn");
 
@@ -345,6 +345,7 @@ function bindProgramToggle(state) {
     saveJson(STORAGE_KEYS.scheduleView, view);
     weekdayBtn.classList.toggle("segmented__btn--active", view === "weekday");
     weekendBtn.classList.toggle("segmented__btn--active", view === "weekend");
+    if (typeof onChange === "function") onChange(view);
   }
 
   weekdayBtn.addEventListener("click", () => setView("weekday"));
@@ -860,7 +861,14 @@ function init() {
   const scheduleView = storedView === "weekday" || storedView === "weekend" ? storedView : pickDefaultScheduleView(now);
 
   const session = window.Sync && window.Sync.getSession ? window.Sync.getSession() : null;
-  const remoteEnabled = !!(session && window.Sync && window.Sync.ensureFirebase && window.Sync.ensureFirebase().ok);
+  if (!session) {
+    // Uygulama sayfası doğrudan açılırsa girişe gönder.
+    location.href = "./index.html";
+    return;
+  }
+
+  const fbInit = window.Sync && window.Sync.ensureFirebase ? window.Sync.ensureFirebase() : { ok: false, reason: "missing_sdk" };
+  const remoteEnabled = !!(session && fbInit && fbInit.ok);
   const role = session ? session.role : "student";
 
   const state = {
@@ -880,7 +888,18 @@ function init() {
   const logoutBtn = el("logoutBtn");
   sessionRoleLabel.textContent = session ? (role === "watcher" ? "Gözetici" : "Öğrenci") : "—";
   sessionGroupLabel.textContent = session ? session.groupCode : "—";
-  syncHint.style.display = remoteEnabled ? "none" : "block";
+  if (remoteEnabled) {
+    syncHint.style.display = "none";
+  } else {
+    syncHint.style.display = "block";
+    const why =
+      fbInit && fbInit.reason === "missing_config"
+        ? "Firebase ayarları yok. `firebase-config.js` dosyasını doldur."
+        : fbInit && fbInit.reason === "missing_sdk"
+          ? "Firebase kütüphanesi yüklenemedi."
+          : "Senkron şu an pasif.";
+    syncHint.textContent = `Senkron pasif: ${why}`;
+  }
   logoutBtn.addEventListener("click", () => {
     if (window.Sync && window.Sync.clearSession) window.Sync.clearSession();
     location.href = "./index.html";
@@ -888,7 +907,7 @@ function init() {
 
   initSidebarControls();
   initSidebarNavigation();
-  bindProgramToggle(state);
+  bindProgramToggle(state, () => tick(state));
   initNets(state);
   initQuestions(state);
   initSettings(state);

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Giriş • Program Takip</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand__title">Program Takip</div>
+          <div class="brand__subtitle">Öğrenci / Gözetici girişi</div>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="hero hero--single">
+          <div class="nowCard">
+            <div class="nowCard__top">
+              <div>
+                <div class="pill">Cihazlar arası senkron</div>
+                <div class="nowTitle">Giriş</div>
+              </div>
+            </div>
+
+            <div class="sub">
+              Aynı <b>Grup Kodu</b> ile giriş yapan cihazlar aynı kayıtları görür. Gözetici sadece görüntüler.
+            </div>
+
+            <form class="form" id="loginForm">
+              <div class="segmented" role="tablist" aria-label="Rol seçimi">
+                <button class="segmented__btn segmented__btn--active" id="roleStudent" type="button">
+                  Öğrenci
+                </button>
+                <button class="segmented__btn" id="roleWatcher" type="button">
+                  Gözetici
+                </button>
+              </div>
+
+              <label class="field">
+                <span class="field__label">Grup Kodu</span>
+                <input class="field__input" id="groupCode" autocomplete="off" placeholder="örn: BEDIRHAN-1" required />
+              </label>
+
+              <button class="btn" type="submit">Devam et</button>
+
+              <div class="hint" id="configHint">
+                Not: İlk kurulum için `firebase-config.js` içine Firebase bilgilerini girmen gerekiyor.
+              </div>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Firebase (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+    <script src="./firebase-config.js"></script>
+    <script src="./sync.js"></script>
+    <script>
+      (function () {
+        const roleStudent = document.getElementById("roleStudent");
+        const roleWatcher = document.getElementById("roleWatcher");
+        const groupCode = document.getElementById("groupCode");
+        const loginForm = document.getElementById("loginForm");
+        const configHint = document.getElementById("configHint");
+
+        let role = "student";
+        function setRole(next) {
+          role = next;
+          roleStudent.classList.toggle("segmented__btn--active", role === "student");
+          roleWatcher.classList.toggle("segmented__btn--active", role === "watcher");
+        }
+
+        roleStudent.addEventListener("click", () => setRole("student"));
+        roleWatcher.addEventListener("click", () => setRole("watcher"));
+
+        // Hint visibility
+        configHint.style.display = window.Sync && window.Sync.hasFirebaseConfig && window.Sync.hasFirebaseConfig() ? "none" : "block";
+
+        const existing = window.Sync && window.Sync.getSession ? window.Sync.getSession() : null;
+        if (existing) {
+          groupCode.value = existing.groupCode || "";
+          setRole(existing.role || "student");
+        }
+
+        loginForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const code = window.Sync.sanitizeGroupCode(groupCode.value);
+          if (!code) return;
+          window.Sync.setSession({ role, groupCode: code });
+          location.href = "./index.html";
+        });
+      })();
+    </script>
+  </body>
+</html>
+
